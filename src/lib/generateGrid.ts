@@ -8,13 +8,12 @@ interface GridResult {
 export function generateGrid(words: string[], size = 10): GridResult {
   const grid: string[][] = Array.from({ length: size }, () => Array(size).fill(""));
   const placedWords: string[] = [];
-
   const directions: Direction[] = ["H", "V", "D1", "D2"];
 
   const shuffle = <T>(array: T[]) => [...array].sort(() => Math.random() - 0.5);
 
   for (const word of shuffle(words)) {
-    let placed = false;
+    let placedSuccessfully = false;
 
     for (let attempts = 0; attempts < 50; attempts++) {
       const dir = directions[Math.floor(Math.random() * directions.length)];
@@ -24,13 +23,13 @@ export function generateGrid(words: string[], size = 10): GridResult {
       if (canPlaceWord(grid, word.toUpperCase(), row, col, dir)) {
         placeWord(grid, word.toUpperCase(), row, col, dir);
         placedWords.push(word.toUpperCase());
-        placed = true;
+        placedSuccessfully = true;
         break;
       }
     }
 
-    // Optional: skip words that cannot be placed after 50 attempts
-    if (!placed) continue;
+    // If word cannot be placed, just skip it
+    if (!placedSuccessfully) continue;
   }
 
   // Fill empty spaces with random letters

@@ -22,7 +22,7 @@ const LetterGrid: React.FC<LetterGridProps> = ({
   setFoundWords,
   setScore,
 }) => {
-  // Hooks must always be at the top
+  // Hooks always at the top
   const [selection, setSelection] = useState<Cell[]>([]);
   const isDragging = useRef(false);
 
@@ -66,8 +66,16 @@ const LetterGrid: React.FC<LetterGridProps> = ({
     const col = Number(target.getAttribute("data-col"));
     if (!isNaN(row) && !isNaN(col)) handleMouseEnter(row, col);
   };
-
   const handleTouchEnd = () => handleMouseUp();
+
+  const isCellFound = (r: number, c: number) => {
+    for (const word of foundWords) {
+      // Check all possible horizontal, vertical, diagonal positions
+      const positions = findWordPositions(word, grid);
+      if (positions.some((pos) => pos.row === r && pos.col === c)) return true;
+    }
+    return false;
+  };
 
   return (
     <div
@@ -81,12 +89,7 @@ const LetterGrid: React.FC<LetterGridProps> = ({
       {grid.map((row, rIdx) =>
         row.map((letter, cIdx) => {
           const isSelected = selection.some((cell) => cell.row === rIdx && cell.col === cIdx);
-          const isFound = foundWords.some((w) =>
-            w.split("").every(
-              (l, idx) =>
-                grid[selection[idx]?.row || 0][selection[idx]?.col || 0] === l
-            )
-          );
+          const isFound = isCellFound(rIdx, cIdx);
 
           return (
             <div
@@ -115,5 +118,38 @@ const LetterGrid: React.FC<LetterGridProps> = ({
     </div>
   );
 };
+
+// Helper: find positions of a word in grid (H, V, D1, D2)
+function findWordPositions(word: string, grid: string[][]) {
+  const positions: { row: number; col: number }[] = [];
+  const size = grid.length;
+  const dirs = [
+    { dr: 0, dc: 1 }, // H
+    { dr: 1, dc: 0 }, // V
+    { dr: 1, dc: 1 }, // D1
+    { dr: 1, dc: -1 }, // D2
+  ];
+
+  for (let r = 0; r < size; r++) {
+    for (let c = 0; c < size; c++) {
+      for (const { dr, dc } of dirs) {
+        let match = true;
+        const tempPos = [];
+        for (let i = 0; i < word.length; i++) {
+          const nr = r + dr * i;
+          const nc = c + dc * i;
+          if (nr < 0 || nc < 0 || nr >= size || nc >= size || grid[nr][nc] !== word[i]) {
+            match = false;
+            break;
+          }
+          tempPos.push({ row: nr, col: nc });
+        }
+        if (match) return tempPos; // return first match
+      }
+    }
+  }
+
+  return [];
+}
 
 export default LetterGrid;
