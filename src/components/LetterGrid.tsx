@@ -22,10 +22,11 @@ const LetterGrid: React.FC<LetterGridProps> = ({
   setFoundWords,
   setScore,
 }) => {
-  if (!grid.length) return null;
-
+  // Hooks must always be at the top
   const [selection, setSelection] = useState<Cell[]>([]);
   const isDragging = useRef(false);
+
+  if (!grid.length) return null;
 
   const getSelectedWord = (cells: Cell[]) =>
     cells.map((cell) => grid[cell.row][cell.col]).join("").toUpperCase();
@@ -57,6 +58,7 @@ const LetterGrid: React.FC<LetterGridProps> = ({
 
   // Touch support
   const handleTouchStart = (row: number, col: number) => handleMouseDown(row, col);
+
   const handleTouchMove = (e: React.TouchEvent<HTMLDivElement>) => {
     const target = document.elementFromPoint(e.touches[0].clientX, e.touches[0].clientY);
     if (!target) return;
@@ -64,6 +66,7 @@ const LetterGrid: React.FC<LetterGridProps> = ({
     const col = Number(target.getAttribute("data-col"));
     if (!isNaN(row) && !isNaN(col)) handleMouseEnter(row, col);
   };
+
   const handleTouchEnd = () => handleMouseUp();
 
   return (
@@ -80,7 +83,8 @@ const LetterGrid: React.FC<LetterGridProps> = ({
           const isSelected = selection.some((cell) => cell.row === rIdx && cell.col === cIdx);
           const isFound = foundWords.some((w) =>
             w.split("").every(
-              (l, idx) => grid[selection[idx]?.row || 0][selection[idx]?.col || 0] === l
+              (l, idx) =>
+                grid[selection[idx]?.row || 0][selection[idx]?.col || 0] === l
             )
           );
 

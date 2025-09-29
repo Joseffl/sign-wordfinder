@@ -11,9 +11,9 @@ export function generateGrid(words: string[], size = 10): GridResult {
 
   const directions: Direction[] = ["H", "V", "D1", "D2"];
 
-  const shuffle = <T>(array: T[]) => array.sort(() => Math.random() - 0.5);
+  const shuffle = <T>(array: T[]) => [...array].sort(() => Math.random() - 0.5);
 
-  for (let word of shuffle(words)) {
+  for (const word of shuffle(words)) {
     let placed = false;
 
     for (let attempts = 0; attempts < 50; attempts++) {
@@ -28,6 +28,9 @@ export function generateGrid(words: string[], size = 10): GridResult {
         break;
       }
     }
+
+    // Optional: skip words that cannot be placed after 50 attempts
+    if (!placed) continue;
   }
 
   // Fill empty spaces with random letters
@@ -41,28 +44,54 @@ export function generateGrid(words: string[], size = 10): GridResult {
   return { grid, placedWords };
 }
 
-// Helper to check placement
+// Check if a word can be placed at the given position and direction
 function canPlaceWord(grid: string[][], word: string, row: number, col: number, dir: Direction) {
   const size = grid.length;
+
   for (let i = 0; i < word.length; i++) {
-    let r = row, c = col;
-    if (dir === "H") c += i;
-    else if (dir === "V") r += i;
-    else if (dir === "D1") { r += i; c += i; }
-    else if (dir === "D2") { r += i; c -= i; }
+    let r = row;
+    let c = col;
+
+    switch (dir) {
+      case "H":
+        c += i;
+        break;
+      case "V":
+        r += i;
+        break;
+      case "D1":
+        r += i;
+        c += i;
+        break;
+      case "D2":
+        r += i;
+        c -= i;
+        break;
+    }
 
     if (r < 0 || c < 0 || r >= size || c >= size) return false;
     if (grid[r][c] && grid[r][c] !== word[i]) return false;
   }
+
   return true;
 }
 
-// Helper to place the word
+// Place the word in the grid
 function placeWord(grid: string[][], word: string, row: number, col: number, dir: Direction) {
   for (let i = 0; i < word.length; i++) {
-    if (dir === "H") grid[row][col + i] = word[i];
-    else if (dir === "V") grid[row + i][col] = word[i];
-    else if (dir === "D1") grid[row + i][col + i] = word[i];
-    else if (dir === "D2") grid[row + i][col - i] = word[i];
+    switch (dir) {
+      case "H":
+        grid[row][col + i] = word[i];
+        break;
+      case "V":
+        grid[row + i][col] = word[i];
+        break;
+      case "D1":
+        grid[row + i][col + i] = word[i];
+        break;
+      case "D2":
+        grid[row + i][col - i] = word[i];
+        break;
+    }
   }
 }
