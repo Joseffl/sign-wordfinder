@@ -121,7 +121,7 @@ const LetterGrid: React.FC<LetterGridProps> = ({
 
 // Helper: find positions of a word in grid (H, V, D1, D2)
 function findWordPositions(word: string, grid: string[][]) {
-  const positions: { row: number; col: number }[] = [];
+  // const positions: { row: number; col: number }[] = [];
   const size = grid.length;
   const dirs = [
     { dr: 0, dc: 1 }, // H
