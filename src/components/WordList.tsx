@@ -1,8 +1,8 @@
 "use client";
 
 interface WordListProps {
-  words: string[]; // Words selected for the current game
-  foundWords: string[]; // Words already found
+  words: string[]; 
+  foundWords: string[]; 
 }
 
 const WordList: React.FC<WordListProps> = ({ words, foundWords }) => {

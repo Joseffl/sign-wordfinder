@@ -1,4 +1,3 @@
-
 "use client";
 
 import { useState, useEffect } from "react";
@@ -28,7 +27,6 @@ const LetterGrid: React.FC<LetterGridProps> = ({
   const [highlightedCells, setHighlightedCells] = useState<Cell[]>([]);
   const [permanentHighlights, setPermanentHighlights] = useState<Cell[]>([]);
 
-  // ✅ Reset highlights whenever a new grid is passed in
   useEffect(() => {
     setPermanentHighlights([]);
     setHighlightedCells([]);
@@ -45,8 +43,6 @@ const LetterGrid: React.FC<LetterGridProps> = ({
   const handleMouseEnter = (row: number, col: number) => {
     if (startCell) {
       const possibleEnd = { row, col };
-
-      // allow only straight lines (horizontal or vertical)
       if (
         possibleEnd.row === startCell.row ||
         possibleEnd.col === startCell.col
@@ -60,12 +56,9 @@ const LetterGrid: React.FC<LetterGridProps> = ({
   const handleMouseUp = () => {
     if (startCell && endCell) {
       const word = getWordFromCells(startCell, endCell);
-
       if (placedWords.includes(word) && !foundWords.includes(word)) {
         setFoundWords([...foundWords, word]);
         setScore((prev) => prev + 10);
-
-        // add permanent highlights for this word
         const wordCells = getCellsBetween(startCell, endCell);
         setPermanentHighlights((prev) => [...prev, ...wordCells]);
       }
@@ -81,21 +74,13 @@ const LetterGrid: React.FC<LetterGridProps> = ({
 
   const getCellsBetween = (start: Cell, end: Cell): Cell[] => {
     const cells: Cell[] = [];
-
     if (start.row === end.row) {
-      // horizontal
       const [min, max] = [Math.min(start.col, end.col), Math.max(start.col, end.col)];
-      for (let c = min; c <= max; c++) {
-        cells.push({ row: start.row, col: c });
-      }
+      for (let c = min; c <= max; c++) cells.push({ row: start.row, col: c });
     } else if (start.col === end.col) {
-      // vertical
       const [min, max] = [Math.min(start.row, end.row), Math.max(start.row, end.row)];
-      for (let r = min; r <= max; r++) {
-        cells.push({ row: r, col: start.col });
-      }
+      for (let r = min; r <= max; r++) cells.push({ row: r, col: start.col });
     }
-
     return cells;
   };
 
@@ -104,74 +89,72 @@ const LetterGrid: React.FC<LetterGridProps> = ({
     return cells.map((cell) => grid[cell.row][cell.col]).join("");
   };
 
-  const isCellHighlighted = (row: number, col: number) => {
-    return highlightedCells.some((cell) => cell.row === row && cell.col === col);
-  };
+  const isCellHighlighted = (row: number, col: number) =>
+    highlightedCells.some((cell) => cell.row === row && cell.col === col);
 
-  const isCellPermanent = (row: number, col: number) => {
-    return permanentHighlights.some((cell) => cell.row === row && cell.col === col);
-  };
+  const isCellPermanent = (row: number, col: number) =>
+    permanentHighlights.some((cell) => cell.row === row && cell.col === col);
 
   return (
-    <div
-      className="grid touch-none select-none"
-      style={{
-        gridTemplateColumns: `repeat(${grid[0].length}, minmax(2.5rem, 9vw))`,
-        gridTemplateRows: `repeat(${grid.length}, minmax(2.5rem, 9vw))`,
-        maxWidth: "100%",
-        margin: "0 auto",
-      }}
-      onMouseUp={handleMouseUp}
-      onTouchEnd={handleMouseUp}
-    >
-      {grid.map((row, rowIndex) =>
-        row.map((letter, colIndex) => {
-          const highlighted = isCellHighlighted(rowIndex, colIndex);
-          const permanent = isCellPermanent(rowIndex, colIndex);
+    <div className="w-full max-w-full flex justify-center px-2">
+      <div
+        className="grid touch-none select-none w-full max-w-[90vw]"
+        style={{
+          gridTemplateColumns: `repeat(${grid[0].length}, 1fr)`,
+          gridTemplateRows: `repeat(${grid.length}, 1fr)`,
+          aspectRatio: "1 / 1", 
+        }}
+        onMouseUp={handleMouseUp}
+        onTouchEnd={handleMouseUp}
+      >
+        {grid.map((row, rowIndex) =>
+          row.map((letter, colIndex) => {
+            const highlighted = isCellHighlighted(rowIndex, colIndex);
+            const permanent = isCellPermanent(rowIndex, colIndex);
 
-          return (
-            <div
-              key={`${rowIndex}-${colIndex}`}
-              className={`flex items-center justify-center border font-bold text-lg transition-colors duration-200 
-                ${
-                  permanent
-                    ? "bg-gradient-to-br from-orange-400 to-orange-500 text-white border-orange-600"
-                    : highlighted
-                    ? "bg-yellow-300 border-yellow-500"
-                    : "bg-white border-gray-400 text-black"
-                }
-              `}
-              onMouseDown={() => handleMouseDown(rowIndex, colIndex)}
-              onMouseEnter={() => handleMouseEnter(rowIndex, colIndex)}
-              onTouchStart={() => handleMouseDown(rowIndex, colIndex)}
-              onTouchMove={(e) => {
-                const touch = e.touches[0];
-                const target = document.elementFromPoint(
-                  touch.clientX,
-                  touch.clientY
-                );
-                if (
-                  target &&
-                  target instanceof HTMLElement &&
-                  target.dataset.row !== undefined &&
-                  target.dataset.col !== undefined
-                ) {
-                  const r = parseInt(target.dataset.row, 10);
-                  const c = parseInt(target.dataset.col, 10);
-                  handleMouseEnter(r, c);
-                }
-              }}
-              data-row={rowIndex}
-              data-col={colIndex}
-            >
-              {letter}
-            </div>
-          );
-        })
-      )}
+            return (
+              <div
+                key={`${rowIndex}-${colIndex}`}
+                className={`flex items-center justify-center border font-bold text-lg transition-colors duration-200
+                  ${
+                    permanent
+                      ? "bg-gradient-to-br from-orange-400 to-orange-500 text-white border-orange-600"
+                      : highlighted
+                      ? "bg-yellow-300 border-yellow-500"
+                      : "bg-white border-gray-400 text-black"
+                  }
+                `}
+                onMouseDown={() => handleMouseDown(rowIndex, colIndex)}
+                onMouseEnter={() => handleMouseEnter(rowIndex, colIndex)}
+                onTouchStart={() => handleMouseDown(rowIndex, colIndex)}
+                onTouchMove={(e) => {
+                  const touch = e.touches[0];
+                  const target = document.elementFromPoint(
+                    touch.clientX,
+                    touch.clientY
+                  );
+                  if (
+                    target &&
+                    target instanceof HTMLElement &&
+                    target.dataset.row !== undefined &&
+                    target.dataset.col !== undefined
+                  ) {
+                    const r = parseInt(target.dataset.row, 10);
+                    const c = parseInt(target.dataset.col, 10);
+                    handleMouseEnter(r, c);
+                  }
+                }}
+                data-row={rowIndex}
+                data-col={colIndex}
+              >
+                {letter}
+              </div>
+            );
+          })
+        )}
+      </div>
     </div>
   );
 };
 
 export default LetterGrid;
-

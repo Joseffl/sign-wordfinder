@@ -25,22 +25,19 @@ const GameContent = () => {
   const [gameOver, setGameOver] = useState(false);
   const [gameWon, setGameWon] = useState(false);
 
-  // Oranges & bonus scoring
   const [orangesEarned, setOrangesEarned] = useState(0);
   const [isBonus, setIsBonus] = useState(false);
 
   const timerKey = useRef(0);
   const lastTimeRemaining = useRef(time);
 
-  // --- Shuffle helper ---
   const shuffleArray = (arr: string[]) =>
     [...arr].sort(() => Math.random() - 0.5);
 
-  // --- Game settings (fixed 10x10 grid, difficulty controls words & directions only) ---
   const getGameSettings = (diff: string, time: number) => {
     let wordCount = 7;
     let directions: ("H" | "V" | "D1" | "D2")[] = ["H", "V"];
-    const gridSize = 10; // always 10x10 for bold, tappable cells
+    const gridSize = 10;
 
     if (diff === "easy") {
       wordCount = Math.min(5 + Math.floor(time / 30), 7);
@@ -56,7 +53,6 @@ const GameContent = () => {
     return { wordCount, directions, gridSize };
   };
 
-  // --- Start a new game ---
   const startNewGame = useCallback(() => {
     const { wordCount, directions, gridSize } = getGameSettings(
       difficulty,
@@ -93,12 +89,10 @@ const GameContent = () => {
     lastTimeRemaining.current = time;
   }, [difficulty, time]);
 
-  // --- Start game on mount/difficulty change ---
   useEffect(() => {
     startNewGame();
   }, [startNewGame]);
 
-  // --- Win condition ---
   useEffect(() => {
     if (placedWords.length > 0 && foundWords.length === placedWords.length) {
       setTimeout(() => {
@@ -112,7 +106,6 @@ const GameContent = () => {
     }
   }, [foundWords, placedWords, score]);
 
-  // --- Time up (lose condition) ---
   const handleTimeUp = (timeRemaining: number) => {
     lastTimeRemaining.current = timeRemaining;
     if (foundWords.length !== placedWords.length) {
@@ -128,7 +121,6 @@ const GameContent = () => {
   return (
     <div className="flex flex-col min-h-screen bg-gradient-to-br from-orange-400 via-orange-500 to-orange-600">
       <div className="flex-1 p-4 flex flex-col items-center w-full max-w-4xl mx-auto">
-        {/* Header (Timer + Score) */}
         <div className="w-full flex justify-between items-center mb-4">
           <Timer
             key={timerKey.current}
@@ -144,12 +136,10 @@ const GameContent = () => {
           />
         </div>
 
-        {/* Player info */}
         <h2 className="text-lg font-bold text-white mb-2">
           Player: {playerName} ({difficulty.toUpperCase()} mode)
         </h2>
 
-        {/* Grid */}
         {grid.length > 0 && (
           <LetterGrid
             grid={grid}
@@ -163,16 +153,13 @@ const GameContent = () => {
           />
         )}
 
-        {/* Word list */}
         <WordList words={placedWords} foundWords={foundWords} />
       </div>
 
-      {/* Footer */}
       <footer className="text-center py-4 text-white font-semibold">
         Made with ❤️ by Joe
       </footer>
 
-      {/* Results */}
       {gameOver && (
         <ResultsModal
           isOpen={true}

@@ -25,7 +25,6 @@ const SetupPage = () => {
             Game Setup
           </h2>
 
-          {/* Player Name */}
           <input
             type="text"
             placeholder="Enter your name"
@@ -34,7 +33,6 @@ const SetupPage = () => {
             className="w-full px-4 py-2 border border-orange-500 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500 placeholder:text-gray-400 text-gray-800 "
           />
 
-          {/* Difficulty */}
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">
               Select Difficulty
@@ -50,7 +48,6 @@ const SetupPage = () => {
             </select>
           </div>
 
-          {/* Time Limit */}
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">
               Time Limit
@@ -66,7 +63,6 @@ const SetupPage = () => {
             </select>
           </div>
 
-          {/* Start Button */}
           <button
             onClick={handleStartGame}
             className="w-full py-3 rounded-lg bg-orange-600 text-white font-bold shadow-md hover:scale-105 transition"
