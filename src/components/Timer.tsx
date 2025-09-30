@@ -1,43 +1,48 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useEffect, useState } from "react";
 
 interface TimerProps {
-  duration: number; // in seconds
-  onTimeUp: () => void;
-  isPaused?: boolean; // pause the countdown
+  duration: number;
+  onTimeUp: (timeRemaining: number) => void;
+  onTick?: (timeRemaining: number) => void;
+  isPaused: boolean;
 }
 
-const Timer: React.FC<TimerProps> = ({ duration, onTimeUp, isPaused = false }) => {
+const Timer: React.FC<TimerProps> = ({ duration, onTimeUp, onTick, isPaused }) => {
   const [timeLeft, setTimeLeft] = useState(duration);
 
   useEffect(() => {
-    setTimeLeft(duration); // reset when duration changes
+    setTimeLeft(duration);
   }, [duration]);
 
   useEffect(() => {
-    if (isPaused) return; // do nothing if paused
+    if (isPaused) return;
+
     if (timeLeft <= 0) {
-      onTimeUp();
+      onTimeUp(0);
       return;
     }
 
     const interval = setInterval(() => {
-      setTimeLeft((prev) => prev - 1);
+      setTimeLeft((prev) => {
+        const next = prev - 1;
+        if (next <= 0) {
+          clearInterval(interval);
+          onTimeUp(0);
+          return 0;
+        }
+        if (onTick) onTick(next);
+        return next;
+      });
     }, 1000);
 
     return () => clearInterval(interval);
-  }, [timeLeft, isPaused, onTimeUp]);
-
-  // Format time mm:ss
-  const minutes = Math.floor(timeLeft / 60)
-    .toString()
-    .padStart(2, "0");
-  const seconds = (timeLeft % 60).toString().padStart(2, "0");
+  }, [timeLeft, isPaused, onTimeUp, onTick]);
 
   return (
-    <div className="text-white font-bold text-xl">
-      {minutes}:{seconds}
+    <div className="text-2xl font-bold text-white">
+      Time: {timeLeft}s
     </div>
   );
 };
