@@ -1,13 +1,13 @@
 
 "use client";
 
-import React, { useCallback, useRef, useState } from "react";
+import { useState, useEffect } from "react";
 
 interface LetterGridProps {
   grid: string[][];
   placedWords: string[];
   foundWords: string[];
-  setFoundWords: React.Dispatch<React.SetStateAction<string[]>>;
+  setFoundWords: (words: string[]) => void;
   setScore: React.Dispatch<React.SetStateAction<number>>;
 }
 
@@ -23,133 +23,146 @@ const LetterGrid: React.FC<LetterGridProps> = ({
   setFoundWords,
   setScore,
 }) => {
-  const gridRef = useRef<HTMLDivElement | null>(null);
-  const pointerIdRef = useRef<number | null>(null);
-  const [selection, setSelection] = useState<Cell[]>([]);
+  const [startCell, setStartCell] = useState<Cell | null>(null);
+  const [endCell, setEndCell] = useState<Cell | null>(null);
+  const [highlightedCells, setHighlightedCells] = useState<Cell[]>([]);
+  const [permanentHighlights, setPermanentHighlights] = useState<Cell[]>([]);
 
-  // --- Helpers ---
-  const getSelectedWord = useCallback(
-    (cells: Cell[]) =>
-      cells.map((cell) => grid[cell.row][cell.col]).join("").toUpperCase(),
-    [grid]
-  );
+  // ✅ Reset highlights whenever a new grid is passed in
+  useEffect(() => {
+    setPermanentHighlights([]);
+    setHighlightedCells([]);
+    setStartCell(null);
+    setEndCell(null);
+  }, [grid]);
 
-  const coordsToCell = useCallback(
-    (clientX: number, clientY: number): Cell | null => {
-      const container = gridRef.current;
-      if (!container) return null;
-      const rect = container.getBoundingClientRect();
-      const x = clientX - rect.left;
-      const y = clientY - rect.top;
-      if (x < 0 || y < 0 || x > rect.width || y > rect.height) return null;
+  const handleMouseDown = (row: number, col: number) => {
+    setStartCell({ row, col });
+    setEndCell(null);
+    setHighlightedCells([{ row, col }]);
+  };
 
-      const cols = grid[0].length;
-      const rows = grid.length;
-      const cellWidth = rect.width / cols;
-      const cellHeight = rect.height / rows;
+  const handleMouseEnter = (row: number, col: number) => {
+    if (startCell) {
+      const possibleEnd = { row, col };
 
-      const col = Math.floor(x / cellWidth);
-      const row = Math.floor(y / cellHeight);
+      // allow only straight lines (horizontal or vertical)
+      if (
+        possibleEnd.row === startCell.row ||
+        possibleEnd.col === startCell.col
+      ) {
+        setEndCell(possibleEnd);
+        updateHighlightedCells(startCell, possibleEnd);
+      }
+    }
+  };
 
-      if (row < 0 || col < 0 || row >= rows || col >= cols) return null;
-      return { row, col };
-    },
-    [grid]
-  );
+  const handleMouseUp = () => {
+    if (startCell && endCell) {
+      const word = getWordFromCells(startCell, endCell);
 
-  const pushCellIfNew = useCallback((cell: Cell | null) => {
-    if (!cell) return;
-    setSelection((prev) => {
-      const last = prev[prev.length - 1];
-      if (last && last.row === cell.row && last.col === cell.col) return prev;
-      if (prev.some((c) => c.row === cell.row && c.col === cell.col)) return prev;
-      return [...prev, cell];
-    });
-  }, []);
+      if (placedWords.includes(word) && !foundWords.includes(word)) {
+        setFoundWords([...foundWords, word]);
+        setScore((prev) => prev + 10);
 
-  const finalizeSelection = useCallback(() => {
-    if (selection.length === 0) return;
+        // add permanent highlights for this word
+        const wordCells = getCellsBetween(startCell, endCell);
+        setPermanentHighlights((prev) => [...prev, ...wordCells]);
+      }
+    }
+    setStartCell(null);
+    setEndCell(null);
+    setHighlightedCells([]);
+  };
 
-    const word = getSelectedWord(selection);
-    if (placedWords.includes(word) && !foundWords.includes(word)) {
-      setFoundWords((prev) => [...prev, word]);
-      setScore((prev) => prev + 10);
+  const updateHighlightedCells = (start: Cell, end: Cell) => {
+    setHighlightedCells(getCellsBetween(start, end));
+  };
+
+  const getCellsBetween = (start: Cell, end: Cell): Cell[] => {
+    const cells: Cell[] = [];
+
+    if (start.row === end.row) {
+      // horizontal
+      const [min, max] = [Math.min(start.col, end.col), Math.max(start.col, end.col)];
+      for (let c = min; c <= max; c++) {
+        cells.push({ row: start.row, col: c });
+      }
+    } else if (start.col === end.col) {
+      // vertical
+      const [min, max] = [Math.min(start.row, end.row), Math.max(start.row, end.row)];
+      for (let r = min; r <= max; r++) {
+        cells.push({ row: r, col: start.col });
+      }
     }
 
-    setSelection([]);
-  }, [selection, placedWords, foundWords, getSelectedWord, setFoundWords, setScore]);
+    return cells;
+  };
 
-  // --- Early exit AFTER hooks are defined ---
-  if (!grid || grid.length === 0) {
-    return <div>No grid available</div>;
-  }
+  const getWordFromCells = (start: Cell, end: Cell): string => {
+    const cells = getCellsBetween(start, end);
+    return cells.map((cell) => grid[cell.row][cell.col]).join("");
+  };
+
+  const isCellHighlighted = (row: number, col: number) => {
+    return highlightedCells.some((cell) => cell.row === row && cell.col === col);
+  };
+
+  const isCellPermanent = (row: number, col: number) => {
+    return permanentHighlights.some((cell) => cell.row === row && cell.col === col);
+  };
 
   return (
     <div
-      ref={gridRef}
-      className="grid gap-1 touch-none w-full max-w-lg mx-auto select-none"
+      className="grid touch-none select-none"
       style={{
-        gridTemplateColumns: `repeat(${grid[0].length}, 1fr)`,
-        gridTemplateRows: `repeat(${grid.length}, 1fr)`,
-        touchAction: "none",
-        userSelect: "none",
+        gridTemplateColumns: `repeat(${grid[0].length}, minmax(2.5rem, 9vw))`,
+        gridTemplateRows: `repeat(${grid.length}, minmax(2.5rem, 9vw))`,
+        maxWidth: "100%",
+        margin: "0 auto",
       }}
-      onPointerDown={(e) => {
-        pointerIdRef.current = e.pointerId;
-        (e.currentTarget as Element).setPointerCapture?.(e.pointerId);
-        setSelection([]);
-        const cell = coordsToCell(e.clientX, e.clientY);
-        pushCellIfNew(cell);
-        e.preventDefault();
-      }}
-      onPointerMove={(e) => {
-        if (pointerIdRef.current !== e.pointerId) return;
-        const cell = coordsToCell(e.clientX, e.clientY);
-        pushCellIfNew(cell);
-      }}
-      onPointerUp={(e) => {
-        if (pointerIdRef.current !== e.pointerId) return;
-        (e.currentTarget as Element).releasePointerCapture?.(e.pointerId);
-        pointerIdRef.current = null;
-        finalizeSelection();
-      }}
-      onPointerCancel={(e) => {
-        if (pointerIdRef.current !== e.pointerId) return;
-        (e.currentTarget as Element).releasePointerCapture?.(e.pointerId);
-        pointerIdRef.current = null;
-        setSelection([]);
-      }}
-      onPointerLeave={() => {
-        if (pointerIdRef.current !== null) {
-          finalizeSelection();
-          pointerIdRef.current = null;
-        }
-      }}
+      onMouseUp={handleMouseUp}
+      onTouchEnd={handleMouseUp}
     >
-      {grid.map((rowArr, rIdx) =>
-        rowArr.map((letter, cIdx) => {
-          const isSelected = selection.some(
-            (cell) => cell.row === rIdx && cell.col === cIdx
-          );
-          const isFound = false; // placeholder until you re-add highlighting
+      {grid.map((row, rowIndex) =>
+        row.map((letter, colIndex) => {
+          const highlighted = isCellHighlighted(rowIndex, colIndex);
+          const permanent = isCellPermanent(rowIndex, colIndex);
 
           return (
             <div
-              key={`${rIdx}-${cIdx}`}
-              className={`flex items-center justify-center font-bold cursor-pointer rounded 
-                text-[clamp(0.75rem,1.5vw,1.25rem)] sm:text-lg
+              key={`${rowIndex}-${colIndex}`}
+              className={`flex items-center justify-center border font-bold text-lg transition-colors duration-200 
                 ${
-                  isFound
-                    ? "bg-green-500 text-white"
-                    : isSelected
-                    ? "bg-yellow-400 text-white"
-                    : "bg-orange-200 text-orange-800"
-                }`}
-              style={{ aspectRatio: "1 / 1" }}
-              onClick={(ev) => {
-                ev.stopPropagation();
-                pushCellIfNew({ row: rIdx, col: cIdx });
+                  permanent
+                    ? "bg-gradient-to-br from-orange-400 to-orange-500 text-white border-orange-600"
+                    : highlighted
+                    ? "bg-yellow-300 border-yellow-500"
+                    : "bg-white border-gray-400 text-black"
+                }
+              `}
+              onMouseDown={() => handleMouseDown(rowIndex, colIndex)}
+              onMouseEnter={() => handleMouseEnter(rowIndex, colIndex)}
+              onTouchStart={() => handleMouseDown(rowIndex, colIndex)}
+              onTouchMove={(e) => {
+                const touch = e.touches[0];
+                const target = document.elementFromPoint(
+                  touch.clientX,
+                  touch.clientY
+                );
+                if (
+                  target &&
+                  target instanceof HTMLElement &&
+                  target.dataset.row !== undefined &&
+                  target.dataset.col !== undefined
+                ) {
+                  const r = parseInt(target.dataset.row, 10);
+                  const c = parseInt(target.dataset.col, 10);
+                  handleMouseEnter(r, c);
+                }
               }}
+              data-row={rowIndex}
+              data-col={colIndex}
             >
               {letter}
             </div>
