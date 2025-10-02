@@ -18,7 +18,7 @@ const LandingPage = () => {
           </h1>
           <p className="text-lg md:text-xl font-light max-w-md mx-auto">
             Find as many Sign-related words as you can before time runs out!  
-            Challenge yourself, climb the leaderboard, and earn oranges 🍊 
+            Challenge yourself and earn oranges 🍊 
           </p>
 
           <button
